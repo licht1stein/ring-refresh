@@ -40,44 +40,19 @@
   (when-let [body-str (as-str body)]
     (str/replace
      body-str
-     #"<head\s*(?:\s[^\/>]+)?>"
-     #(str % "<script type=\"text/javascript\">" script "</script>"))))
-
-(def ^:private last-modified
-  (atom (Date.)))
-
-(defn- watch-dirs! [dirs]
-  (watcher dirs
-   (rate 100)
-   (on-change
-    (fn [_] (reset! last-modified (Date.))))))
-
-(defn- random-uuid []
-  (str (UUID/randomUUID)))
      #"</head>"
      #(str "\n<script type=\"text/javascript\" async>\n" script "</script>\n" %))))
 
-(defn- watch-until [reference pred timeout-ms]
-  (let [result    (promise)
-        watch-key (random-uuid)]
-    (try
-      (add-watch reference
-                 watch-key
-                 (fn [_ _ _ value]
-                   (when (pred value)
-                     (deliver result true))))
-      (or (pred @reference)
-          (deref result timeout-ms false))
-      (finally
-       (remove-watch reference watch-key)))))
+(defn- source-changed-handler [_ dirs]
+  {:status 200
+   :headers {"Content-Type" "application/json"}
+   :body (str (apply dirs-last-modified-ts dirs))})
 
-(def ^:private source-changed-route
-  (GET "/__source_changed" [since]
-    (let [timestamp (Long. since)]
-      (str (watch-until
-            last-modified
-            #(> (.getTime %) timestamp)
-            60000)))))
+(defn- intercept-source-changed-route [handler dirs]
+  (fn [{:keys [uri] :as request}]
+  (if (= uri "/__source_changed")
+      (source-changed-handler request dirs)
+      (handler request))))
 
 (defn- wrap-with-script [handler script]
   (fn [request]
@@ -97,8 +72,6 @@
   ([handler]
      (wrap-refresh handler ["src" "resources"]))
   ([handler dirs]
-     (watch-dirs! dirs)
-     (wrap-params
-      (routes
-       source-changed-route
-       (wrap-with-script handler refresh-script)))))
+   (fn [request]
+     (let [wrapped (-> handler (intercept-source-changed-route dirs) (wrap-with-script refresh-script))]
+       (wrapped request)))))
