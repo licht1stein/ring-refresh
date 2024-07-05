@@ -6,6 +6,14 @@
   (:require [clojure.string :as str]
             [clojure.java.io :as io])
   (:import [java.util Date UUID]))
+(defn- dir-last-modified-ts [dir]
+  (when-let [files (file-seq (io/file dir))]
+    (apply max (map #(.lastModified %) files))))
+
+(defn- dirs-last-modified-ts [dir & dirs]
+  (->> (cons dir dirs)
+       (mapv dir-last-modified-ts)
+       (reduce max)))
 
 (defn- get-request? [request]
   (= (:request-method request) :get))
