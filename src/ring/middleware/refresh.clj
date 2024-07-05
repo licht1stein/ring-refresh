@@ -15,7 +15,7 @@
   (= (:request-method request) :get))
 
 (defn- html-content? [response]
-  (if-let [content-type (get-in response [:headers "Content-Type"])]
+  (when-let [content-type (get-in response [:headers "Content-Type"])]
     (re-find #"text/html" content-type)))
 
 (def ^:private refresh-script
@@ -37,7 +37,7 @@
   (as-str [_] nil))
 
 (defn- add-script [body script]
-  (if-let [body-str (as-str body)]
+  (when-let [body-str (as-str body)]
     (str/replace
      body-str
      #"<head\s*(?:\s[^\/>]+)?>"
