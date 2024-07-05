@@ -50,6 +50,8 @@
 
 (defn- random-uuid []
   (str (UUID/randomUUID)))
+     #"</head>"
+     #(str "\n<script type=\"text/javascript\" async>\n" script "</script>\n" %))))
 
 (defn- watch-until [reference pred timeout-ms]
   (let [result    (promise)
