@@ -13,7 +13,6 @@ async function reloadIfSourceChanged() {
         const sourceChanged = parseInt(text);
 
         if (sourceChanged >= pageLoadTime) {
-            console.log("Changed")
             window.location.reload();
         }
     } catch (error) {
