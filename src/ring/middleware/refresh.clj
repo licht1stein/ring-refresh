@@ -1,11 +1,7 @@
 (ns ring.middleware.refresh
-  (:refer-clojure :exclude [random-uuid])
-  (:use [compojure.core :only (routes GET)]
-        [watchtower.core :only (watcher rate on-change)]
-        ring.middleware.params)
   (:require [clojure.string :as str]
-            [clojure.java.io :as io])
-  (:import [java.util Date UUID]))
+            [clojure.java.io :as io]))
+
 (defn- dir-last-modified-ts [dir]
   (when-let [files (file-seq (io/file dir))]
     (apply max (map #(.lastModified %) files))))
